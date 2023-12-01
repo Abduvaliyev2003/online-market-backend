@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UserSaveRequest\StoreUserSaveRequest;
+use App\Http\Requests\UserSaveRequest\UpdateUserSaveRequest;
 use App\Models\UserSave;
-use App\Http\Requests\StoreUserSaveRequest;
-use App\Http\Requests\UpdateUserSaveRequest;
+
 
 class UserSaveController extends Controller
 {
@@ -40,13 +41,7 @@ class UserSaveController extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(UserSave $userSave)
-    {
-        //
-    }
+  
 
     /**
      * Update the specified resource in storage.

@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('photos', function (Blueprint $table) {
             $table->id();
+            $table->morphs('photoable');
+            $table->text('name')->nullable();
+            $table->text('path')->nullable();
             $table->timestamps();
         });
     }

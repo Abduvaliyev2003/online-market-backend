@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\UserAddressRequest;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateDiscountRequest extends FormRequest
+class StoreUserAddressRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

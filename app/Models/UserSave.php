@@ -8,4 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class UserSave extends Model
 {
     use HasFactory;
+
+    protected $table = 'user_saves';
+    protected $guarded = [];
 }

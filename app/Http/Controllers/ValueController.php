@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ValueRequest\StoreValueRequest;
+use App\Http\Requests\ValueRequest\UpdateValueRequest;
 use App\Models\Value;
-use App\Http\Requests\StoreValueRequest;
-use App\Http\Requests\UpdateValueRequest;
+
 
 class ValueController extends Controller
 {
@@ -16,13 +17,7 @@ class ValueController extends Controller
         //
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+    
 
     /**
      * Store a newly created resource in storage.
@@ -36,14 +31,6 @@ class ValueController extends Controller
      * Display the specified resource.
      */
     public function show(Value $value)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Value $value)
     {
         //
     }

@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\AttributRequest;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateUserSaveRequest extends FormRequest
+class StoreAttributRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**

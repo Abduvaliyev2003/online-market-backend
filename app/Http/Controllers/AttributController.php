@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AttributRequest\StoreAttributRequest;
+use App\Http\Requests\AttributRequest\UpdateAttributRequest;
 use App\Models\Attribut;
-use App\Http\Requests\StoreAttributRequest;
-use App\Http\Requests\UpdateAttributRequest;
+
 
 class AttributController extends Controller
 {
@@ -16,13 +17,7 @@ class AttributController extends Controller
         //
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+    
 
     /**
      * Store a newly created resource in storage.
@@ -40,13 +35,7 @@ class AttributController extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Attribut $attribut)
-    {
-        //
-    }
+   
 
     /**
      * Update the specified resource in storage.

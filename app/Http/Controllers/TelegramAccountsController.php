@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TelegramAccounts;
-use App\Http\Requests\StoreTelegramAccountsRequest;
-use App\Http\Requests\UpdateTelegramAccountsRequest;
+use Illuminate\Http\Request;
 
 class TelegramAccountsController extends Controller
 {
@@ -16,18 +15,11 @@ class TelegramAccountsController extends Controller
         //
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
+    
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreTelegramAccountsRequest $request)
+    public function store(Request $request)
     {
         //
     }
@@ -40,18 +32,12 @@ class TelegramAccountsController extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(TelegramAccounts $telegramAccounts)
-    {
-        //
-    }
+    
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateTelegramAccountsRequest $request, TelegramAccounts $telegramAccounts)
+    public function update(Request $request, TelegramAccounts $telegramAccounts)
     {
         //
     }

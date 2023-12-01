@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DiscountRequest\StoreDiscountRequest;
+use App\Http\Requests\DiscountRequest\UpdateDiscountRequest;
 use App\Models\Discount;
-use App\Http\Requests\StoreDiscountRequest;
-use App\Http\Requests\UpdateDiscountRequest;
+
 
 class DiscountController extends Controller
 {
@@ -16,13 +17,6 @@ class DiscountController extends Controller
         //
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
 
     /**
      * Store a newly created resource in storage.
@@ -40,13 +34,7 @@ class DiscountController extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Discount $discount)
-    {
-        //
-    }
+    
 
     /**
      * Update the specified resource in storage.

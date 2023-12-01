@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StockRequest\StoreStockRequest;
+use App\Http\Requests\StockRequest\UpdateStockRequest;
 use App\Models\Stock;
-use App\Http\Requests\StoreStockRequest;
-use App\Http\Requests\UpdateStockRequest;
+
 
 class StockController extends Controller
 {
@@ -16,13 +17,7 @@ class StockController extends Controller
         //
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+    
 
     /**
      * Store a newly created resource in storage.
@@ -40,13 +35,7 @@ class StockController extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Stock $stock)
-    {
-        //
-    }
+    
 
     /**
      * Update the specified resource in storage.

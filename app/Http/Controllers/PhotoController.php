@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PhotoRequest\StorePhotoRequest;
+use App\Http\Requests\PhotoRequest\UpdatePhotoRequest;
 use App\Models\Photo;
-use App\Http\Requests\StorePhotoRequest;
-use App\Http\Requests\UpdatePhotoRequest;
+
 
 class PhotoController extends Controller
 {
@@ -16,13 +17,6 @@ class PhotoController extends Controller
         //
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
 
     /**
      * Store a newly created resource in storage.
@@ -40,13 +34,7 @@ class PhotoController extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Photo $photo)
-    {
-        //
-    }
+    
 
     /**
      * Update the specified resource in storage.

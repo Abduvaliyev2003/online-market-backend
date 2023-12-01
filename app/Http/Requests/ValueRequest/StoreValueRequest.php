@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\ValueRequest;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreOrderItemRequest extends FormRequest
+class StoreValueRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**

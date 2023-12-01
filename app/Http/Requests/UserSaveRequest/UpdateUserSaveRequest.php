@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests;
+namespace  App\Http\Requests\UserSaveRequest;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreStockRequest extends FormRequest
+class UpdateUserSaveRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
