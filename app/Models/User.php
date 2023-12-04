@@ -60,7 +60,7 @@ class User extends Authenticatable
     }
 
 
-    public function telegramAcount(): HasMany
+    public function telegramAccounts(): HasMany
     {
         return $this->hasMany(TelegramAccounts::class);
     }
