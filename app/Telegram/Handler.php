@@ -9,26 +9,25 @@ use App\Models\TelegramAccounts;
 use App\Models\User;
 use DefStudio\Telegraph\Enums\ChatActions;
 use Illuminate\Support\Str;
-
 use DefStudio\Telegraph\Facades\Telegraph;
 use DefStudio\Telegraph\Handlers\WebhookHandler;
 use DefStudio\Telegraph\Keyboard\Button;
-use DefStudio\Telegraph\Keyboard\Keyboard;
 use DefStudio\Telegraph\Keyboard\ReplyButton;
 use DefStudio\Telegraph\Keyboard\ReplyKeyboard;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Stringable;
 use Nette\Utils\Random;
+use DefStudio\Telegraph\Keyboard\Keyboard;
 
 class Handler  extends WebhookHandler
 {  
      
     
-    
     public function start():void
     {
-        // $this->typing();
-        $user = $this->user( $this->chat->chat_id);
+        $this->typing();
+        // $this->chat->message('Natog`ri formatda yozdingiz')->send();
+        $user = $this->user($this->chat->chat_id);
      
         if($user == null){
             $this->register();
@@ -36,8 +35,6 @@ class Handler  extends WebhookHandler
         {
             $this->menu();
         }    
-      
-        
     }
 
     protected function handleUnknownCommand(Stringable $text):void
@@ -49,7 +46,6 @@ class Handler  extends WebhookHandler
 
     public function register(): void
     {
-        $this->setpage('register');
         $this->typing();
         $this->chat
             ->html('Please send your phone number for registration: +998 ** *** ** **')
@@ -60,6 +56,7 @@ class Handler  extends WebhookHandler
                     ->inputPlaceholder("Phone number ...")
             )
             ->send();
+        // $this->setpage('register');
     }
     
       
@@ -67,9 +64,8 @@ class Handler  extends WebhookHandler
     {
         $this->typing();
         $contact = $this->message?->contact()?->phoneNumber() ?? null;
-
+       
         if($text->value() === '⬅️ Главное меню') {
-         
             $this->menu();
         } else {
             switch($this->getPage())
@@ -81,7 +77,7 @@ class Handler  extends WebhookHandler
                     }
                     elseif($text->value() !== '')
                     {
-                        if ( $this->regexPhoneNumber($text->value())) {
+                        if ($this->regexPhoneNumber($text->value())) {
                             $this->user_store($text,  $this->chat->chat_id);
                             $this->menu();
                         } else {
@@ -97,21 +93,19 @@ class Handler  extends WebhookHandler
                     }
                     break;
                 case 'setting':
-                    if($contact  !== null || $contact  !== []){
-                        // $this->updatePhone($contact);
-                    }
-                    elseif($text->value() !== '')
-                    {
-                        $this->chat->message($text->value())->send();
+                    if ($contact !== null && $contact !== []) {
+                        $this->updatePhone($contact);
+                    } else {
                         if ($this->regexPhoneNumber($text->value())) {
-                            // $this->updatePhone($text->value());
+                            $this->updatePhone($text->value());
                         } else {
                             $this->chat->message('Natog`ri formatda yozdingiz')->send();
                         }
                     }
+                    
                     break;
-                // default:
-                //     $this->menu();
+                default:
+                    $this->menu();
             }
         }
     
@@ -120,8 +114,7 @@ class Handler  extends WebhookHandler
 
     public function menu($bol = false, $edit = false):void
     {
-        $this->typing();
-        $this->setpage('menu');
+     
         $inlineKeyboard = Keyboard::make()
         ->row([
             Button::make('🛒 Начать заказ')->action('order'),
@@ -156,25 +149,29 @@ class Handler  extends WebhookHandler
         
     }
 
-    protected function user_store($phone, $chatid)
+    protected function user_store($phone, $chatid , $page = 'menu')
     {
         $user = User::where('phone', $phone)->first();
         
         if ($user == null) {
             $randomPassword = Str::random(8);
-            $newUser = User::create([
-                'phone' => $phone,
-                'password' => Hash::make($randomPassword),
-            ]);
-               
-            $role = Role::find(2); 
-            $newUser->roles()->attach($role->id);
-            
-            $newUser->telegramAccounts()->create([
-                'chat_id' => $chatid,
-                'telegram_page' => 'menu',
-            ]);
-            
+
+            $newUser = User::updateOrCreate(
+                    ['phone' => $phone],
+                    [
+                     'password' => Hash::make($randomPassword),
+                    ]
+                );
+
+            $role = Role::find(2);
+            $newUser->roles()->sync([$role->id]);
+
+            $newUser->telegramAccounts()->updateOrCreate(
+                ['chat_id' => $chatid],
+                [
+                 'telegram_page' => $page,
+                ]
+            );
         } else {
             $user->telegramAccounts()->create([
                 'chat_id' => $chatid,
@@ -187,7 +184,7 @@ class Handler  extends WebhookHandler
 
     public function order()
     {
-        $this->typing();
+    
         $categories =  Category::get();
        
         $keybord = [];
@@ -215,7 +212,6 @@ class Handler  extends WebhookHandler
         } else {
             $this->chat->message('Пустой')->send();
         }
-        
     }
 
     public function product_back()
@@ -225,7 +221,6 @@ class Handler  extends WebhookHandler
 
     public function menus():void
     {
-        $this->typing();
         $this->menu(true , true);
     }
     
@@ -243,13 +238,13 @@ class Handler  extends WebhookHandler
         ]);
         $user = $this->user( $this->chat->chat_id);
        
-        $phone =$user->phone ;
+        $phone = $user->phone;
        if($boll == false){
-        $this->chat->edit($this->messageId)->html(
+          $this->chat->edit($this->messageId)->html(
             "<b> Телефон:</b> $user->phone \n\n Выберите одно из следующих "
-        )
-        ->keyboard($inlineKeyboard)
-        ->send();
+          )
+          ->keyboard($inlineKeyboard)
+          ->send();
        } else {
            $this->chat->html( "<b> Телефон:</b> $user->phone \n\n Выберите одно из следующих ")
            ->keyboard($inlineKeyboard)
@@ -264,7 +259,32 @@ class Handler  extends WebhookHandler
         $this->setpage('comment');
         $this->chat->message("написать комментарий")->send();
     }
-    
+     
+    public function products()
+    {
+        $product_id = $this->data->get('product_id');
+
+        $inlineKeyboard = Keyboard::make()
+        ->row([
+            Button::make('➖')->action('minus'),
+            Button::make('1')->action(''),
+            Button::make('➕')->action('plus'),
+        ])
+        ->row([
+            Button::make('🗑 Дабавыт карзино')->action('add_karzina')
+        ])
+        ->row([
+            Button::make('⬅️ Главное меню')->action('menus')
+        ]);
+
+        // Telegraph::photo('https://media.istockphoto.com/id/886884542/photo/pile-of-metal-rods.jpg?s=612x612&w=0&k=20&c=V5vZ--olClbcdR9QyYWzzqR3-uZbLWmKjaf9ZVwT4k0=')
+        //     ->message('salom,')
+        //     ->keyboard($inlineKeyboard)
+        //     ->send();
+
+    }
+
+
     public function phone()
     {
         Telegraph::deleteMessage($this->messageId)->send();
@@ -290,6 +310,7 @@ class Handler  extends WebhookHandler
     }
     
 
+
     private function setpage(string $page):void
     {
        $account = TelegramAccounts::where('chat_id', $this->chat->chat_id)->update([
@@ -306,16 +327,17 @@ class Handler  extends WebhookHandler
     
     private function getPage()
     {
-        $account = TelegramAccounts::where('chat_id', $this->chat->chat_id)->first()['telegram_page'];
+        $account = TelegramAccounts::where('chat_id', $this->chat->chat_id)->first()['telegram_page'] ?? 'register';
 
-        return $account;
+        return $account ?? 'register';
     }
 
     public function updatePhone($phone):void
     {   
         $user = $this->user();
-        User::find($user->id)->update([
-            'phone' => $phone
+     
+        User::where('id', $user->id)->update([
+            'phone' => $phone ?? '+998998784803'
         ]);
         $replyKeyboard = ReplyKeyboard::make()
         ->row([
