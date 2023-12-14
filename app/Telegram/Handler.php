@@ -184,7 +184,6 @@ class Handler  extends WebhookHandler
 
     public function order()
     {
-    
         $categories =  Category::get();
        
         $keybord = [];
@@ -196,10 +195,10 @@ class Handler  extends WebhookHandler
         ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
     } 
 
-    public function category(): void 
+    public function category($cate = null): void 
     {
         $category_id = $this->data->get('category_id');
-        $products = Product::where('category_id', $category_id)
+        $products = Product::where('category_id', $cate ?? $category_id)
                    ->select('id', 'title')
                    ->get();
         if($products !== []){
@@ -207,8 +206,15 @@ class Handler  extends WebhookHandler
                 $keybord[] =   Button::make($product->title)->action('products')->param('product_id', $product->id);
             }
             $keybord[] =  Button::make('⬅️ Назад')->action('product_back');
-            $this->chat->edit($this->messageId)->message('Выберит продукт')
-            ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
+            if($cate == null){
+                $this->chat->edit($this->messageId)->message('Выберит продукт')
+                    ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
+            } else {
+                Telegraph::deleteMessage($this->messageId)->send();
+                $this->chat->message('Выберит продукт')
+                    ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
+            }
+            
         } else {
             $this->chat->message('Пустой')->send();
         }
@@ -230,26 +236,26 @@ class Handler  extends WebhookHandler
        $this->setpage('setting');
         // Telegraph::deleteMessage($this->messageId)->send();
         $inlineKeyboard = Keyboard::make()
-        ->row([
-            Button::make('Телефон')->action('phone'),
-        ])
-        ->row([
-            Button::make('⬅️ Главное меню')->action('menus')
-        ]);
+            ->row([
+                Button::make('Телефон')->action('phone'),
+            ])
+            ->row([
+                Button::make('⬅️ Главное меню')->action('menus')
+            ]);
         $user = $this->user( $this->chat->chat_id);
        
         $phone = $user->phone;
-       if($boll == false){
+        if($boll == false){
           $this->chat->edit($this->messageId)->html(
             "<b> Телефон:</b> $user->phone \n\n Выберите одно из следующих "
           )
           ->keyboard($inlineKeyboard)
           ->send();
-       } else {
+        } else {
            $this->chat->html( "<b> Телефон:</b> $user->phone \n\n Выберите одно из следующих ")
            ->keyboard($inlineKeyboard)
            ->send();
-       }
+        }
         
     }
     
@@ -263,7 +269,9 @@ class Handler  extends WebhookHandler
     public function products()
     {
         $product_id = $this->data->get('product_id');
-
+        $product = Product::find($product_id);
+        
+        Telegraph::deleteMessage($this->messageId)->send();
         $inlineKeyboard = Keyboard::make()
         ->row([
             Button::make('➖')->action('minus'),
@@ -274,17 +282,24 @@ class Handler  extends WebhookHandler
             Button::make('🗑 Дабавыт карзино')->action('add_karzina')
         ])
         ->row([
-            Button::make('⬅️ Главное меню')->action('menus')
+            Button::make('⬅️ Назад')->action('back')->param('category_id',  $product->category_id)
         ]);
-
-        // Telegraph::photo('https://media.istockphoto.com/id/886884542/photo/pile-of-metal-rods.jpg?s=612x612&w=0&k=20&c=V5vZ--olClbcdR9QyYWzzqR3-uZbLWmKjaf9ZVwT4k0=')
-        //     ->message('salom,')
-        //     ->keyboard($inlineKeyboard)
-        //     ->send();
+    
+        $this->chat->edit($this->messageId)->html($product->title)
+           ->photo('https://media.istockphoto.com/id/886884542/photo/pile-of-metal-rods.jpg?s=612x612&w=0&k=20&c=V5vZ--olClbcdR9QyYWzzqR3-uZbLWmKjaf9ZVwT4k0=')
+           ->keyboard($inlineKeyboard)
+           ->send();
 
     }
+    
 
-
+    public function back()
+    {
+        $category_id = $this->data->get('category_id');
+       
+        $this->category($category_id);
+    }
+    
     public function phone()
     {
         Telegraph::deleteMessage($this->messageId)->send();
