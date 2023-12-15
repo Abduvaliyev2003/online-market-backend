@@ -3,6 +3,7 @@
 namespace App\Telegram;
 
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\TelegramAccounts;
@@ -64,7 +65,8 @@ class Handler  extends WebhookHandler
     {
         $this->typing();
         $contact = $this->message?->contact()?->phoneNumber() ?? null;
-       
+        $latitude = $this->message?->location()->latitude() ?? null;
+        $longitude = $this->message?->location()->longitude() ?? null;
         if($text->value() === '⬅️ Главное меню') {
             $this->menu();
         } else {
@@ -194,7 +196,25 @@ class Handler  extends WebhookHandler
         $this->chat->edit($this->messageId)->message('Выберите категорию.')
         ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
     } 
-
+    public function  location()
+    {    
+        
+        Telegraph::deleteMessage($this->messageId)->send();
+        $this->chat
+        ->html('Введите свой адрес')
+        ->replyKeyboard(
+            ReplyKeyboard::make()
+                ->buttons(
+                    [
+                        ReplyButton::make('Выберите свое местоположение')->requestLocation(true),
+                        ReplyButton::make('Ваши предыдущие адреса'),
+                    ], [
+                        ReplyButton::make('⬅️ Главное меню')
+                    ])
+                ->resize(true)
+        )
+        ->send();
+    }
     public function category($cate = null): void 
     {
         $category_id = $this->data->get('category_id');
@@ -269,6 +289,7 @@ class Handler  extends WebhookHandler
     public function products()
     {
         $product_id = $this->data->get('product_id');
+        $user = $this->user();
         $product = Product::find($product_id);
         
         Telegraph::deleteMessage($this->messageId)->send();
@@ -313,6 +334,7 @@ class Handler  extends WebhookHandler
         )
         ->send();
     }
+
     private function user()
     {
         $user = User::with('telegramAccounts')
