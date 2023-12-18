@@ -4,10 +4,12 @@ namespace App\Telegram;
 
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\TelegramAccounts;
 use App\Models\User;
+use App\Models\UserAddress;
 use DefStudio\Telegraph\Enums\ChatActions;
 use Illuminate\Support\Str;
 use DefStudio\Telegraph\Facades\Telegraph;
@@ -65,8 +67,8 @@ class Handler  extends WebhookHandler
     {
         $this->typing();
         $contact = $this->message?->contact()?->phoneNumber() ?? null;
-        $latitude = $this->message?->location()->latitude() ?? null;
-        $longitude = $this->message?->location()->longitude() ?? null;
+        $latitude = $this->message?->location()?->latitude() ?? "";
+        $longitude = $this->message?->location()?->longitude() ?? "";
         if($text->value() === '⬅️ Главное меню') {
             $this->menu();
         } else {
@@ -106,6 +108,13 @@ class Handler  extends WebhookHandler
                     }
                     
                     break;
+                case 'location': 
+                    if($longitude !== "")
+                    {
+                        $address = $this->storeLocation($longitude, $latitude);
+                        $this->order($address);
+                    } 
+                    break;
                 default:
                     $this->menu();
             }
@@ -119,7 +128,7 @@ class Handler  extends WebhookHandler
      
         $inlineKeyboard = Keyboard::make()
         ->row([
-            Button::make('🛒 Начать заказ')->action('order'),
+            Button::make('🛒 Начать заказ')->action('new_location'),
         ])
         ->row([
             Button::make('И о нас')->action('about'),
@@ -184,21 +193,43 @@ class Handler  extends WebhookHandler
         return true;
     }
 
-    public function order()
+    public function order($address = null)
     {
         $categories =  Category::get();
+        $user = $this->user();
+        // $this->chat->message(json_encode($address))->send();
        
         $keybord = [];
         foreach($categories as $category){
           $keybord[] =   Button::make($category->name)->action('category')->param('category_id', $category->id);
         }
         $keybord[] =  Button::make('⬅️ Главное меню')->action('menus');
-        $this->chat->edit($this->messageId)->message('Выберите категорию.')
-        ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
-    } 
-    public function  location()
-    {    
+        if($address == null){
+            $this->chat->edit($this->messageId)->message('Выберите категорию.')
+            ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
+        } else {
+            $replyKeyboard = ReplyKeyboard::make()
+            ->row([
+                ReplyButton::make('⬅️ Главное меню'),
+            ])->resize(true);
+            $messagid = Telegraph::message(' Оформим ваш заказ вместе? 🤗')
+            ->replyKeyboard($replyKeyboard)
+            ->send();
+            $order = Order::create([
+                'user_id' => $user->id,
+                'telegram_id' =>  $this->chat->chat_id,
+                'address' => $address[0]['id'],
+                'status' => 'start',
+                'total_sum' => 0
+            ]);
+            $this->chat->message('Выберите категорию.')
+            ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
+        }
         
+    } 
+    public function  new_location()
+    {    
+        $this->setpage('location');
         Telegraph::deleteMessage($this->messageId)->send();
         $this->chat
         ->html('Введите свой адрес')
@@ -207,7 +238,6 @@ class Handler  extends WebhookHandler
                 ->buttons(
                     [
                         ReplyButton::make('Выберите свое местоположение')->requestLocation(true),
-                        ReplyButton::make('Ваши предыдущие адреса'),
                     ], [
                         ReplyButton::make('⬅️ Главное меню')
                     ])
@@ -289,28 +319,35 @@ class Handler  extends WebhookHandler
     public function products()
     {
         $product_id = $this->data->get('product_id');
-        $user = $this->user();
+        $this->setpage('product');
         $product = Product::find($product_id);
-        
+        $order = $this->getOrder();
+        $orderItem =  OrderItem::create([
+            'order_id' => $order->id,
+            'product' => $product->id,
+            'count' => 1,
+            'total_sum' =>  $product->price
+        ]);
         Telegraph::deleteMessage($this->messageId)->send();
         $inlineKeyboard = Keyboard::make()
         ->row([
-            Button::make('➖')->action('minus'),
+            Button::make('➖')->action('minus')->param('order_item-id', $orderItem->id),
             Button::make('1')->action(''),
-            Button::make('➕')->action('plus'),
+            Button::make('➕')->action('plus')->param('order_item-id', $orderItem->id),
         ])
         ->row([
-            Button::make('🗑 Дабавыт карзино')->action('add_karzina')
+            Button::make('🗑 Дабавыт карзино')->action('add_karzina')->param('order_item-id', $orderItem->id)
         ])
         ->row([
-            Button::make('⬅️ Назад')->action('back')->param('category_id',  $product->category_id)
+            Button::make('⬅️ Назад')->action('back')->param('category_id',  $product->category_id),
+            Button::make('🗑  Карзино')->action('karzina')->param('orderItem_id',  $product->id)
         ]);
     
-        $this->chat->edit($this->messageId)->html($product->title)
+        $this->chat->edit($this->messageId)->html($product->title . "\n Цена:  ". $product->price . '\nОписание: ' . $product->desc)
            ->photo('https://media.istockphoto.com/id/886884542/photo/pile-of-metal-rods.jpg?s=612x612&w=0&k=20&c=V5vZ--olClbcdR9QyYWzzqR3-uZbLWmKjaf9ZVwT4k0=')
            ->keyboard($inlineKeyboard)
            ->send();
-
+ 
     }
     
 
@@ -345,7 +382,64 @@ class Handler  extends WebhookHandler
       
         return $user ?? null;
     }
+     
+    private function storeLocation($long, $lat)
+    { 
+       
+        $api_key = '49167188-2e49-4d62-a9f2-a27752083ce6';
+        $url = "https://geocode-maps.yandex.ru/1.x/?apikey={$api_key}&format=json&geocode={$long},{$lat}";
+        $response = file_get_contents($url);
+        $data = json_decode($response, true);
+        $user = $this->user();
+        $address = '';
+        if (!empty($data['response']['GeoObjectCollection']['featureMember'])) {
+            $address = $data['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['metaDataProperty']['GeocoderMetaData']['text'];
+        }
+
+        $address = UserAddress::query()->updateOrCreate([
+            'long' => $long,
+            'lat' => $lat,
+            'user_id' => $user->id,
+        ], [
+            'long' => $long,
+            'lat' => $lat,
+            'user_id' => $user->id,
+            'title' => $address
+        ])->get(['long','lat', 'id',  'title']);
+        
+
+        return $address;
+    }
     
+    public function minus()
+    {
+        $order_item_id = $this->data->get('order_item-id');
+        $orderItem = OrderItem::find($order_item_id);
+        $product = Product::find($orderItem->product);
+        $counter =  $orderItem->count == 1 ? $orderItem->count : $orderItem->count - 1 ;
+        $orderItem->update([
+            'count' => $counter,
+            'total_sum' => $product->price * $counter
+        ]);
+        
+        $this->updateCounter($orderItem, $counter, $product);
+
+    }
+
+    public function plus()
+    {
+        $order_item_id = $this->data->get('order_item-id');
+        $orderItem = OrderItem::find($order_item_id);
+        $product = Product::find($orderItem->product);
+        $counter =   $orderItem->count + 1 ;
+        $orderItem->update([
+            'count' => $counter,
+            'total_sum' => $product->price * $counter
+        ]);
+        
+        $this->updateCounter($orderItem, $counter, $product);
+    }
+
 
 
     private function setpage(string $page):void
@@ -386,12 +480,38 @@ class Handler  extends WebhookHandler
         $this->setting(true);
     }
 
+    public function updateCounter($orderItem, $counter, $product)
+    {
+        $inlineKeyboard = Keyboard::make()
+        ->row([
+            Button::make('➖')->action('minus')->param('order_item-id', $orderItem->id),
+            Button::make($counter)->action(''),
+            Button::make('➕')->action('plus')->param('order_item-id', $orderItem->id),
+        ])
+        ->row([
+            Button::make('🗑 Дабавыт карзино')->action('add_karzina')->param('order_item-id', $orderItem->id)
+        ])
+        ->row([
+            Button::make('⬅️ Назад')->action('back')->param('category_id',   $product->category_id),
+            Button::make('🗑  Карзино')->action('karzina')->param('orderItem_id',  $product->id)
+        ]);
+        Telegraph::replaceKeyboard(
+            messageId: $this->messageId, 
+            newKeyboard: $inlineKeyboard
+        )->send();
+    }
+
+    private function getOrder()
+    {
+        return Order::where('telegram_id', $this->chat->chat_id)->latest()->first() ?? null;
+    }
+
     private function typing()
     {
         $this->chat->action(ChatActions::TYPING)->send();
     }
 
-   
+      
 }
 
 

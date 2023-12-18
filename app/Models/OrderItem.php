@@ -10,13 +10,13 @@ class OrderItem extends Model
 {
     use HasFactory;
 
-    protected $table = 'order_itmes';
+ 
     protected $guarded = [];
 
-    protected $casts =
-    [
-       'product' => 'array' 
-    ];
+    // protected $casts =
+    // [
+    //    'product' => 'array' 
+    // ];
 
     public function orders():BelongsTo
     {
