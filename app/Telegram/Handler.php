@@ -475,19 +475,21 @@ class Handler  extends WebhookHandler
         if($order !== null && $order !== [])
         {
             $inlineKey = [];
-            $text = "Корзина ";
+            $text = "Корзина: ";
 
             foreach ($order['order_items'] as $orderItem) {
                 $this->chat->message(json_encode($orderItem))->send();
-                $text .= "\n" . $orderItem['count'] . " " . $orderItem['total_sum'] . "sum";
+                $text .= "\n" . $orderItem['count'] . " " . $orderItem['total_sum'] . " sum";
                 $inlineKey = array_merge($inlineKey, $this->lineKeyb($orderItem));
             }
 
-            $inlineKey[] = Button::make('❌ Удалить все')->action('delete')->param('order', $order->id);
+            $inlineKey[] = 
 
-            $inlineKeyboard = Keyboard::make()->buttons($inlineKey)->chunk(2);
-
-            $text .= "\n Итого:" . $order->total_sum;
+            $inlineKeyboard = Keyboard::make()->row($inlineKey)->row([
+                Button::make('❌ Удалить все')->action('delete')->param('order', $order->id)
+            ]);
+               
+            $text .= "\n Итого:" . $order->total_sum . " sum";
 
             $this->chat->html($text)->keyboard($inlineKeyboard)->send();
         } else 
@@ -516,20 +518,42 @@ class Handler  extends WebhookHandler
            'status' => 'karzina'
         ]);
     }
-
+   
 
     private function lineKeyb($orderItem)
     {
         $line = [
-            Button::make('➖')->action('minus')->param('order_item-id', $orderItem->id),
-            Button::make('1')->action(''),
-            Button::make('➕')->action('plus')->param('order_item-id', $orderItem->id),
-            Button::make('❌ Удалит')->action('delete')->param('order_item-id', $orderItem->id),
+                $orderItem->count == 1 
+                     ? Button::make('❌')->action('delete_once')->param('order_item-id', $orderItem->id)->width(0.5)
+                     : Button::make('➖')->action('edit_minus')->param('order_item-id', $orderItem->id)->width(0.5),
+                Button::make($orderItem->count)->action('')->width(0.5),
+                Button::make('➕')->action('edit_plus')->param('order_item-id', $orderItem->id)->width(0.5), 
         ];
 
         return  $line;
     }
-
+    
+    protected function edit_minus()
+    {
+        $order_item_id = $this->data->get('order_item-id');
+        $orderItem = OrderItem::find($order_item_id);
+        $product = Product::find($orderItem->product);
+        $order = Order::find($orderItem->order_id);
+        $counter =  $orderItem->count == 1 ? $orderItem->count : $orderItem->count - 1 ;
+        
+        $this->updateCounter($orderItem, $counter, $product);
+        if($orderItem->count !== 1){
+            $price = $product->price * $counter;
+            $order->update([
+               'total_sum' => $order->total_sum - $price
+            ]);
+            $orderItem->update([
+                'count' => $counter,
+                'total_sum' =>$product->price * $counter
+            ]);
+        }
+       
+    }
 
     private function setpage(string $page):void
     {
