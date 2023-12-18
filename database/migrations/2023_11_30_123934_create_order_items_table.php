@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('product')->nullable();
             $table->integer('count')->nullable();
             $table->double('total_sum')->default(0);
+            $table->string('status')->nullable();
             $table->timestamps();
         });
     }
