@@ -26,6 +26,7 @@ class User extends Authenticatable
         'balonce',
         'email',
         'password',
+        'order_id',
     ];
 
     /**

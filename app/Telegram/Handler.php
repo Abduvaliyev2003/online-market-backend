@@ -112,6 +112,7 @@ class Handler  extends WebhookHandler
                     if($longitude !== "")
                     {
                         $address = $this->storeLocation($longitude, $latitude);
+                        $this->chat->message(json_encode($address))->send();
                         $this->order($address);
                     } 
                     break;
@@ -204,6 +205,7 @@ class Handler  extends WebhookHandler
           $keybord[] =   Button::make($category->name)->action('category')->param('category_id', $category->id);
         }
         $keybord[] =  Button::make('⬅️ Главное меню')->action('menus');
+        $keybord[] = Button::make('🗑  Карзино')->action('karzina_cate');
         if($address == null){
             $this->chat->edit($this->messageId)->message('Выберите категорию.')
             ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
@@ -218,9 +220,12 @@ class Handler  extends WebhookHandler
             $order = Order::create([
                 'user_id' => $user->id,
                 'telegram_id' =>  $this->chat->chat_id,
-                'address' => $address[0]['id'],
+                'address' => $address['id'],
                 'status' => 'start',
                 'total_sum' => 0
+            ]);
+            $this->updateUser([
+               'order_id' => $order->id
             ]);
             $this->chat->message('Выберите категорию.')
             ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
@@ -364,7 +369,6 @@ class Handler  extends WebhookHandler
  
     }
     
-
     public function back()
     {
         $category_id = $this->data->get('category_id');
@@ -409,20 +413,25 @@ class Handler  extends WebhookHandler
         if (!empty($data['response']['GeoObjectCollection']['featureMember'])) {
             $address = $data['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['metaDataProperty']['GeocoderMetaData']['text'];
         }
-
-        $address = UserAddress::query()->updateOrCreate([
-            'long' => $long,
-            'lat' => $lat,
-            'user_id' => $user->id,
-        ], [
-            'long' => $long,
-            'lat' => $lat,
-            'user_id' => $user->id,
-            'title' => $address
-        ])->get(['long','lat', 'id',  'title']);
-        
-
-        return $address;
+        $userAddress = UserAddress::where('user_id', $user->id)
+                       ->where('long', $long)
+                       ->where('lat', $lat)
+                       ->first();
+       
+        if($userAddress !== null)   
+        {
+            return $userAddress;
+        } else {
+          
+            $addresses = UserAddress::create([
+                'long' => $long,
+                'lat' => $lat,
+                'user_id' => $user->id,
+                'title' => $address
+            ]);
+            return $addresses;
+        }
+       
     }
     
     public function minus()
@@ -473,10 +482,10 @@ class Handler  extends WebhookHandler
                     $query->where('status', 'karzina');
                 });
         if($filter !== null)  {
-            $order = $order->where('id', $filter)
+            $order = $order->where('id', $user->order_id)
                     ->where('user_id' , $user->id)->first();
         } else {
-            $order =  $order->where('user_id' , $user->id)->latest()->first() ;
+            $order =  $order->where('id', $user->order_id)->where('user_id' , $user->id)->latest()->first();
         }
         if($order !== null && $order !== [])
         {
@@ -491,6 +500,7 @@ class Handler  extends WebhookHandler
             $inlineKey[] = 
 
             $inlineKeyboard = Keyboard::make()->buttons($inlineKey)->chunk(3)->row([
+                Button::make('⬅️ Назад')->action('order'),
                 Button::make('❌ Удалить все')->action('delete')->param('order', $order->id)
             ]);
                
@@ -505,11 +515,12 @@ class Handler  extends WebhookHandler
             }   
         } else 
         {    
+            Telegraph::deleteMessage($this->messageId)->send();
             $inlineKeyboard = Keyboard::make()->row([
                 Button::make('⬅️ Назад')->action('order'),
             ]);
-            $this->chat->message('Карзина пуста')->send();
-            $this->order();
+            $this->chat->message('Карзина пуста')->keyboard($inlineKeyboard)->send();
+          
 
         }
     }
@@ -535,7 +546,6 @@ class Handler  extends WebhookHandler
         ]);
     }
    
-
     private function lineKeyb($orderItem)
     {
         $line = [
@@ -681,7 +691,11 @@ class Handler  extends WebhookHandler
         return Order::where('telegram_id', $this->chat->chat_id)->latest()->first() ?? null;
     } 
 
-
+    private function updateUser($update):void
+    {
+        $user = $this->user();
+        User::where('id', $user->id)->update($update);
+    }
 
     private function typing()
     {
