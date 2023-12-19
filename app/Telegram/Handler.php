@@ -256,6 +256,7 @@ class Handler  extends WebhookHandler
                 $keybord[] =   Button::make($product->title)->action('products')->param('product_id', $product->id);
             }
             $keybord[] =  Button::make('⬅️ Назад')->action('product_back');
+            $keybord[] =  Button::make('🗑  Карзино')->action('karzina_cate');
             if($cate == null){
                 $this->chat->edit($this->messageId)->message('Выберит продукт')
                     ->keyboard(Keyboard::make()->buttons($keybord)->chunk(2))->send(); 
@@ -464,49 +465,64 @@ class Handler  extends WebhookHandler
         ]);
     }
 
-    public function karzina()
+    public function karzina($edit = false, $filter = null)
     {
         $user = $this->user();
         $order = Order::with('order_items', 'order_items.products')
                 ->whereHas('order_items', function ($query) {
                     $query->where('status', 'karzina');
-                })
-                ->where('user_id' , $user->id)->latest()->first();
+                });
+        if($filter !== null)  {
+            $order = $order->where('id', $filter)
+                    ->where('user_id' , $user->id)->first();
+        } else {
+            $order =  $order->where('user_id' , $user->id)->latest()->first() ;
+        }
         if($order !== null && $order !== [])
         {
             $inlineKey = [];
             $text = "Корзина: ";
-
+          
             foreach ($order['order_items'] as $orderItem) {
-                $this->chat->message(json_encode($orderItem))->send();
+                // $this->chat->message(json_encode($orderItem))->send();
                 $text .= "\n" . $orderItem['count'] . " " . $orderItem['total_sum'] . " sum";
                 $inlineKey = array_merge($inlineKey, $this->lineKeyb($orderItem));
             }
-
             $inlineKey[] = 
 
-            $inlineKeyboard = Keyboard::make()->row($inlineKey)->row([
+            $inlineKeyboard = Keyboard::make()->buttons($inlineKey)->chunk(3)->row([
                 Button::make('❌ Удалить все')->action('delete')->param('order', $order->id)
             ]);
                
             $text .= "\n Итого:" . $order->total_sum . " sum";
-
-            $this->chat->html($text)->keyboard($inlineKeyboard)->send();
+            if($edit){
+                $this->chat->edit($this->messageId)->html($text)->keyboard($inlineKeyboard)->send();
+              
+            } else  
+            {
+                $this->chat->html($text)->keyboard($inlineKeyboard)->send();
+                
+            }   
         } else 
         {    
             $inlineKeyboard = Keyboard::make()->row([
                 Button::make('⬅️ Назад')->action('order'),
             ]);
             $this->chat->message('Карзина пуста')->send();
+            $this->order();
+
         }
     }
     
-
+    public function karzina_cate()
+    {
+        $this->karzina(true);
+    }
     public function add_karzina()
     {
         $order_item_id = $this->data->get('order_item-id');
         $orderItem = OrderItem::find($order_item_id);
-        $product = Product::find($orderItem->product);
+        $product = Product::find($orderItem->product) ?? null;
         $order = Order::find($orderItem->order_id);
         Telegraph::deleteMessage($this->messageId)->send();
         $this->category($product->category_id);
@@ -533,7 +549,7 @@ class Handler  extends WebhookHandler
         return  $line;
     }
     
-    protected function edit_minus()
+    public function edit_minus()
     {
         $order_item_id = $this->data->get('order_item-id');
         $orderItem = OrderItem::find($order_item_id);
@@ -541,7 +557,7 @@ class Handler  extends WebhookHandler
         $order = Order::find($orderItem->order_id);
         $counter =  $orderItem->count == 1 ? $orderItem->count : $orderItem->count - 1 ;
         
-        $this->updateCounter($orderItem, $counter, $product);
+        
         if($orderItem->count !== 1){
             $price = $product->price * $counter;
             $order->update([
@@ -552,7 +568,53 @@ class Handler  extends WebhookHandler
                 'total_sum' =>$product->price * $counter
             ]);
         }
-       
+        $this->karzina(true, $order->id);
+    }
+    
+    public function edit_plus()
+    {
+        $order_item_id = $this->data->get('order_item-id');
+        $orderItem = OrderItem::find($order_item_id);
+        $product = Product::find($orderItem->product);
+        $order = Order::find($orderItem->order_id);
+        $counter =   $orderItem->count + 1 ;
+
+        $price = $product->price * $counter;
+        $order->update([
+            'total_sum' => $order->total_sum + $price
+        ]);
+        $orderItem->update([
+            'count' => $counter,
+            'total_sum' => $product->price * $counter
+        ]);
+
+        $this->karzina(true, $order->id);
+    }
+
+    public function delete()
+    {
+        $order_item_id = $this->data->get('order');
+        $order = Order::find($order_item_id);
+        $orderItem = OrderItem::where('order_id' , $order_item_id)->delete();
+        $order->update([
+           'total_sum' => 0 
+        ]);
+        $this->order();
+    }
+
+    public function delete_once()
+    {    
+        $order_item_id = $this->data->get('order_item-id');
+        $orderItem = OrderItem::find($order_item_id);
+        $order = Order::find($orderItem->order_id);
+        Telegraph::deleteMessage($this->messageId)->send();
+        $order->update([
+            'total_sum' =>  $order->total_sum - $orderItem->total_sum
+        ]);
+
+        $orderItem->delete();
+
+        $this->karzina(true, $order->id);
     }
 
     private function setpage(string $page):void
