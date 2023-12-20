@@ -587,7 +587,7 @@ class Handler  extends WebhookHandler
         $order = Order::find($orderItem->order_id);
         $counter =   $orderItem->count + 1 ;
 
-        $price = $product->price * $counter;
+        $price = $product?->price * $counter;
         $order->update([
             'total_sum' => $order->total_sum + $price
         ]);
@@ -687,9 +687,8 @@ class Handler  extends WebhookHandler
     {
         $user = $this->user();
         $order = Order::find($user->order_id);
-        $orderItem = OrderItem::with('products')->where('order_id', $order->id)->get();
+        $orderItem = OrderItem::with(['products'])->where('order_id', $order->id)->get();
 
-        
         $this->chat->message(json_encode($orderItem))->send();
     }
 
