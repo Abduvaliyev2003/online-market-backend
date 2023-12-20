@@ -501,7 +501,8 @@ class Handler  extends WebhookHandler
 
             $inlineKeyboard = Keyboard::make()->buttons($inlineKey)->chunk(3)->row([
                 Button::make('⬅️ Назад')->action('order'),
-                Button::make('❌ Удалить все')->action('delete')->param('order', $order->id)
+                Button::make('❌ Удалить все')->action('delete')->param('order', $order->id),
+                Button::make("➡️ Продолжать")->action('next')->param('next', $order->id)
             ]);
                
             $text .= "\n Итого:" . $order->total_sum . " sum";
