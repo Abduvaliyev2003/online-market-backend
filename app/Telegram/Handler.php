@@ -25,11 +25,9 @@ use DefStudio\Telegraph\Keyboard\Keyboard;
 class Handler  extends WebhookHandler
 {  
      
-    
     public function start():void
     {
         $this->typing();
-        // $this->chat->message('Natog`ri formatda yozdingiz')->send();
         $user = $this->user($this->chat->chat_id);
      
         if($user == null){
@@ -112,7 +110,7 @@ class Handler  extends WebhookHandler
                     if($longitude !== "")
                     {
                         $address = $this->storeLocation($longitude, $latitude);
-                        $this->chat->message(json_encode($address))->send();
+                        $this->chat->message($address['title'])->send();
                         $this->order($address);
                     } 
                     break;
@@ -328,13 +326,12 @@ class Handler  extends WebhookHandler
         $this->setpage('product');
         $product = Product::find($product_id);
         $order = $this->getOrder();
-        $orderItem  =  OrderItem::where('order_id',$order->id)->where('product', $product->id)->first();
+        $orderItem  =  OrderItem::where('order_id',$order->id)->where('product_id', $product->id)->first();
         $item = null;
         if($orderItem == null)
         {
-        $item  =  OrderItem::create([
+        $item  =  $product->order_items()->create([
                 'order_id' => $order->id,
-                'product' => $product->id,
                 'count' => 1,
                 'total_sum' =>  $product->price
             ]);
@@ -521,8 +518,6 @@ class Handler  extends WebhookHandler
                 Button::make('⬅️ Назад')->action('order'),
             ]);
             $this->chat->message('Карзина пуста')->keyboard($inlineKeyboard)->send();
-          
-
         }
     }
     
@@ -530,13 +525,14 @@ class Handler  extends WebhookHandler
     {
         $this->karzina(true);
     }
+
     public function add_karzina()
     {
         $order_item_id = $this->data->get('order_item-id');
         $orderItem = OrderItem::find($order_item_id);
-        $product = Product::find($orderItem->product) ?? null;
+        $product = Product::find($orderItem->product_id) ?? null;
         $order = Order::find($orderItem->order_id);
-        Telegraph::deleteMessage($this->messageId)->send();
+        
         $this->category($product->category_id);
         $price = $order->total_sum + $orderItem->total_sum;
         $order->update([
@@ -545,6 +541,7 @@ class Handler  extends WebhookHandler
         $orderItem->update([
            'status' => 'karzina'
         ]);
+        Telegraph::deleteMessage($this->messageId)->send();
     }
    
     private function lineKeyb($orderItem)
@@ -618,7 +615,6 @@ class Handler  extends WebhookHandler
         $order_item_id = $this->data->get('order_item-id');
         $orderItem = OrderItem::find($order_item_id);
         $order = Order::find($orderItem->order_id);
-        Telegraph::deleteMessage($this->messageId)->send();
         $order->update([
             'total_sum' =>  $order->total_sum - $orderItem->total_sum
         ]);
@@ -687,11 +683,23 @@ class Handler  extends WebhookHandler
         )->send();
     }
 
+    public function next()
+    {
+        $user = $this->user();
+        $order = Order::find($user->order_id);
+        $orderItem = OrderItem::with('products')->where('order_id', $order->id)->get();
+
+        
+        $this->chat->message(json_encode($orderItem))->send();
+    }
+
     private function getOrder()
     {
         return Order::where('telegram_id', $this->chat->chat_id)->latest()->first() ?? null;
     } 
+    
 
+     
     private function updateUser($update):void
     {
         $user = $this->user();
