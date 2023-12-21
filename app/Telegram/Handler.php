@@ -60,7 +60,6 @@ class Handler  extends WebhookHandler
         // $this->setpage('register');
     }
     
-      
     protected function handleChatMessage(Stringable $text): void
     {
         $this->typing();
@@ -121,7 +120,6 @@ class Handler  extends WebhookHandler
     
     }
     
-
     public function menu($bol = false, $edit = false):void
     {
      
@@ -196,8 +194,7 @@ class Handler  extends WebhookHandler
     {
         $categories =  Category::get();
         $user = $this->user();
-        // $this->chat->message(json_encode($address))->send();
-       
+  
         $keybord = [];
         foreach($categories as $category){
           $keybord[] =   Button::make($category->name)->action('category')->param('category_id', $category->id);
@@ -212,9 +209,9 @@ class Handler  extends WebhookHandler
             ->row([
                 ReplyButton::make('⬅️ Главное меню'),
             ])->resize(true);
-            $messagid = Telegraph::message(' Оформим ваш заказ вместе? 🤗')
-            ->replyKeyboard($replyKeyboard)
-            ->send();
+            $messagid = Telegraph::message('Оформим ваш заказ вместе? 🤗')
+                        ->replyKeyboard($replyKeyboard)
+                        ->send();
             $order = Order::create([
                 'user_id' => $user->id,
                 'telegram_id' =>  $this->chat->chat_id,
@@ -230,6 +227,7 @@ class Handler  extends WebhookHandler
         }
         
     } 
+
     public function  new_location()
     {    
         $this->setpage('location');
@@ -709,8 +707,6 @@ class Handler  extends WebhookHandler
         return Order::where('telegram_id', $this->chat->chat_id)->latest()->first() ?? null;
     } 
     
-
-     
     private function updateUser($update):void
     {
         $user = $this->user();
