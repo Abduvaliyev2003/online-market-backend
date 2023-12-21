@@ -534,7 +534,7 @@ class Handler  extends WebhookHandler
         $order = Order::find($orderItem->order_id);
         
         $this->category($product->category_id);
-        $price = $order->total_sum + $orderItem->total_sum;
+        $price = $orderItem->total_sum + $order->total_sum;
         $order->update([
            'total_sum' => $price
         ]);
@@ -586,9 +586,9 @@ class Handler  extends WebhookHandler
         $order = Order::find($orderItem->order_id);
         $counter =   $orderItem->count + 1 ;
 
-        $price = $product?->price * $counter;
+        $price =$orderItem->total_sum  + $product->price;
         $order->update([
-            'total_sum' => $order->total_sum + $price
+            'total_sum' => $order->total_sum + $product->price
         ]);
         $orderItem->update([
             'count' => $counter,
@@ -685,15 +685,16 @@ class Handler  extends WebhookHandler
     public function next()
     {
         $user = $this->user();
-        $order = Order::with('userAdresses')->find($user->order_id);
+        $order = Order::with('userAdresses')->where('id',$user->order_id)->first();
         $this->chat->message(json_encode($order))->send();
         $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
         $text = '🛍 Ваш  продукт сегодня' ;
-        // $text .= '🗺 '. $order?->address?->title . PHP_EOL;
+        $text .= '\n🗺 '. $order?->user_adresses?->title . PHP_EOL;
         foreach($orderItem as $value){
             $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
         }
         $inlineKeyboard = Keyboard::make()->row([
+            Button::make('⬅️ Назад')->action('karzina'),
             Button::make('❌ Назад')->action('not'),
             Button::make("✅ Подтверждение")->action('yes')->param('next', $order->id)
         ]);
