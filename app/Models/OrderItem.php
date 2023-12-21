@@ -11,7 +11,7 @@ class OrderItem extends Model
     use HasFactory;
 
  
-    protected $guarded = [];
+    protected $fillable = ['order_id', 'product_id', 'count', 'total_sum', 'status'];
 
  
 
@@ -22,6 +22,6 @@ class OrderItem extends Model
 
     public function products():BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'product_id');
     }
 }

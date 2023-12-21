@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->integer('telegram_id')->nullable();
-            $table->text('address');
+            $table->bigInteger('address_id');
             $table->double('total_sum');
             $table->string('status');
             $table->text('comment')->nullable();

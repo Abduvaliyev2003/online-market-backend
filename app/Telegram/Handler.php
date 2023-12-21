@@ -218,7 +218,7 @@ class Handler  extends WebhookHandler
             $order = Order::create([
                 'user_id' => $user->id,
                 'telegram_id' =>  $this->chat->chat_id,
-                'address' => $address['id'],
+                'address_id' => $address['id'],
                 'status' => 'start',
                 'total_sum' => 0
             ]);
@@ -330,7 +330,7 @@ class Handler  extends WebhookHandler
         $item = null;
         if($orderItem == null)
         {
-        $item  =  $product->order_items()->create([
+        $item  =  $product->orderItems()->create([
                 'order_id' => $order->id,
                 'count' => 1,
                 'total_sum' =>  $product->price
@@ -359,7 +359,7 @@ class Handler  extends WebhookHandler
             Button::make('🗑  Карзино')->action('karzina')->param('orderItem_id',  $product->id)
         ]);
     
-        $this->chat->edit($this->messageId)->html($product->title ."\n Цена:  ". $product->price ."\n Описание: " . $product->desc)
+        $this->chat->edit($this->messageId)->html("Наименование товара: ". $product->title ."\nЦена:  ". $product->price . " сум" ."\nОписание: " . $product->desc)
            ->photo('https://media.istockphoto.com/id/886884542/photo/pile-of-metal-rods.jpg?s=612x612&w=0&k=20&c=V5vZ--olClbcdR9QyYWzzqR3-uZbLWmKjaf9ZVwT4k0=')
            ->keyboard($inlineKeyboard)
            ->send();
@@ -435,7 +435,7 @@ class Handler  extends WebhookHandler
     {
         $order_item_id = $this->data->get('order_item-id');
         $orderItem = OrderItem::find($order_item_id);
-        $product = Product::find($orderItem->product);
+        $product = Product::find($orderItem->product_id);
         $counter =  $orderItem->count == 1 ? $orderItem->count : $orderItem->count - 1 ;
        
         $this->updateCounter($orderItem, $counter, $product);
@@ -449,7 +449,7 @@ class Handler  extends WebhookHandler
     {
         $order_item_id = $this->data->get('order_item-id');
         $orderItem = OrderItem::find($order_item_id);
-        $product = Product::find($orderItem->product);
+        $product = Product::find($orderItem->product_id);
         $counter =   $orderItem->count + 1 ;
          $inlineKeyboard = Keyboard::make()
         ->row([
@@ -474,8 +474,8 @@ class Handler  extends WebhookHandler
     public function karzina($edit = false, $filter = null)
     {
         $user = $this->user();
-        $order = Order::with('order_items', 'order_items.products')
-                ->whereHas('order_items', function ($query) {
+        $order = Order::with('orderItems', 'orderItems.products')
+                ->whereHas('orderItems', function ($query) {
                     $query->where('status', 'karzina');
                 });
         if($filter !== null)  {
@@ -489,7 +489,7 @@ class Handler  extends WebhookHandler
             $inlineKey = [];
             $text = "Корзина: ";
           
-            foreach ($order['order_items'] as $orderItem) {
+            foreach ($order['orderItems'] as $orderItem) {
                 // $this->chat->message(json_encode($orderItem))->send();
                 $text .= "\n" . $orderItem['count'] . " " . $orderItem['total_sum'] . " sum";
                 $inlineKey = array_merge($inlineKey, $this->lineKeyb($orderItem));
@@ -561,19 +561,18 @@ class Handler  extends WebhookHandler
     {
         $order_item_id = $this->data->get('order_item-id');
         $orderItem = OrderItem::find($order_item_id);
-        $product = Product::find($orderItem->product);
+        $product = Product::find($orderItem->product_id);
         $order = Order::find($orderItem->order_id);
         $counter =  $orderItem->count == 1 ? $orderItem->count : $orderItem->count - 1 ;
         
-        
         if($orderItem->count !== 1){
-            $price = $product->price * $counter;
+            $price = $product?->price * $counter;
             $order->update([
                'total_sum' => $order->total_sum - $price
             ]);
             $orderItem->update([
                 'count' => $counter,
-                'total_sum' =>$product->price * $counter
+                'total_sum' =>$price
             ]);
         }
         $this->karzina(true, $order->id);
@@ -583,7 +582,7 @@ class Handler  extends WebhookHandler
     {
         $order_item_id = $this->data->get('order_item-id');
         $orderItem = OrderItem::find($order_item_id);
-        $product = Product::find($orderItem->product);
+        $product = Product::find($orderItem->product_id);
         $order = Order::find($orderItem->order_id);
         $counter =   $orderItem->count + 1 ;
 
@@ -593,7 +592,7 @@ class Handler  extends WebhookHandler
         ]);
         $orderItem->update([
             'count' => $counter,
-            'total_sum' => $product->price * $counter
+            'total_sum' => $price
         ]);
 
         $this->karzina(true, $order->id);
@@ -686,10 +685,22 @@ class Handler  extends WebhookHandler
     public function next()
     {
         $user = $this->user();
-        $order = Order::find($user->order_id);
-        $orderItem = OrderItem::with(['products'])->where('order_id', $order->id)->get();
-
-        $this->chat->message(json_encode($orderItem))->send();
+        $order = Order::with('userAdresses')->find($user->order_id);
+        $this->chat->message(json_encode($order))->send();
+        $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
+        $text = '🛍 Ваш  продукт сегодня' ;
+        // $text .= '🗺 '. $order?->address?->title . PHP_EOL;
+        foreach($orderItem as $value){
+            $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
+        }
+        $inlineKeyboard = Keyboard::make()->row([
+            Button::make('❌ Назад')->action('not'),
+            Button::make("✅ Подтверждение")->action('yes')->param('next', $order->id)
+        ]);
+        $text .= "\n💵 Общая сумма: ". number_format($order->total_sum) . ' сум' .PHP_EOL;
+        $this->chat->edit($this->messageId)
+            ->html($text)
+            ->keyboard($inlineKeyboard)->send();
     }
 
     private function getOrder()
