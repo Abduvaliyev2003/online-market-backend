@@ -566,7 +566,7 @@ class Handler  extends WebhookHandler
         if($orderItem->count !== 1){
             $price = $product?->price * $counter;
             $order->update([
-               'total_sum' => $order->total_sum - $price
+               'total_sum' => $order->total_sum - $product?->price
             ]);
             $orderItem->update([
                 'count' => $counter,
