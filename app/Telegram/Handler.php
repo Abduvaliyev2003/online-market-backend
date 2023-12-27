@@ -683,11 +683,12 @@ class Handler  extends WebhookHandler
     public function next()
     {
         $user = $this->user();
-        $order = Order::with('userAdresses')->where('id',$user->order_id)->first();
-        $this->chat->message(json_encode($order))->send();
+
+        $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
+        $this->chat->message(json_encode($order->user_adresses))->send();
         $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
         $text = '🛍 Ваш  продукт сегодня' ;
-        $text .= '\n🗺 '. $order?->user_adresses?->title . PHP_EOL;
+        $text .= "\n🗺 ". $order?->user_adresses?->title . PHP_EOL;
         foreach($orderItem as $value){
             $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
         }
