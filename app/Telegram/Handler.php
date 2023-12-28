@@ -489,7 +489,7 @@ class Handler  extends WebhookHandler
           
             foreach ($order['orderItems'] as $orderItem) {
                 // $this->chat->message(json_encode($orderItem))->send();
-                $text .= "\n" . $orderItem['count'] . " " . $orderItem['total_sum'] . " sum";
+                $text .= "\n" . $orderItem['count'] . " " .  $orderItem['products']['title'] . " "  . $orderItem['total_sum'] . " sum";
                 $inlineKey = array_merge($inlineKey, $this->lineKeyb($orderItem));
             }
             $inlineKey[] = 
@@ -506,6 +506,7 @@ class Handler  extends WebhookHandler
               
             } else  
             {
+                Telegraph::deleteMessage($this->messageId)->send();
                 $this->chat->html($text)->keyboard($inlineKeyboard)->send();
                 
             }   
@@ -685,7 +686,6 @@ class Handler  extends WebhookHandler
         $user = $this->user();
 
         $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
-        $this->chat->message(json_encode($order->user_adresses))->send();
         $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
         $text = '🛍 Ваш  продукт сегодня' ;
         $text .= "\n🗺 ". $order?->user_adresses?->title . PHP_EOL;
@@ -694,7 +694,7 @@ class Handler  extends WebhookHandler
         }
         $inlineKeyboard = Keyboard::make()->row([
             Button::make('⬅️ Назад')->action('karzina'),
-            Button::make('❌ Назад')->action('not'),
+           
             Button::make("✅ Подтверждение")->action('yes')->param('next', $order->id)
         ]);
         $text .= "\n💵 Общая сумма: ". number_format($order->total_sum) . ' сум' .PHP_EOL;

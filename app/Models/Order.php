@@ -24,5 +24,10 @@ class Order extends Model
     {
         return $this->belongsTo(UserAddress::class, 'address_id');
     }
+
+    public function paytments(): BelongsTo
+    {
+        return $this->belongsTo(PaymentT::class);
+    }
  
 }
