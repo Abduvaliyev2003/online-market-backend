@@ -5,6 +5,7 @@ namespace App\Telegram;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PaymentT;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\TelegramAccounts;
@@ -114,6 +115,13 @@ class Handler  extends WebhookHandler
                         $address = $this->storeLocation($longitude, $latitude);
                         $this->chat->message($address['title'])->send();
                         $this->order($address);
+                    } 
+                    break;
+                case 'next':
+                    $e = PaymentT::where('title', $text)->first();
+                    if($e !== null)
+                    {
+
                     } 
                     break;
                 default:
@@ -688,7 +696,7 @@ class Handler  extends WebhookHandler
     public function next()
     {
         $user = $this->user();
-
+        Telegraph::deleteMessage($this->messageId)->send();
         $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
         $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
         $text = '🛍 Ваш  продукт сегодня' ;
@@ -707,6 +715,27 @@ class Handler  extends WebhookHandler
             ->keyboard($inlineKeyboard)->send();
     }
 
+    public function yes()
+    {   
+        $this->setpage('next');
+        $text = "
+        Пожалуйста, выберите тип оплаты
+        ";
+        $payment = PaymentT::get();
+        $key = [];
+        foreach($payment as $value){
+           $key[] =  ReplyButton::make($value['title']);
+        }
+        $key[] =      ReplyButton::make('⬅️ Главное меню');
+        $replyKeyboard = ReplyKeyboard::make()
+        ->buttons(
+            $key
+        )->resize(true);
+
+        $this->chat->message($text)->replyKeyboard($replyKeyboard)->send();
+    }
+
+ 
     private function getOrder()
     {
         return Order::where('telegram_id', $this->chat->chat_id)->latest()->first() ?? null;
