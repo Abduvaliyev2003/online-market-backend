@@ -121,7 +121,7 @@ class Handler  extends WebhookHandler
                     $e = PaymentT::where('title', $text)->first();
                     if($e !== null)
                     {
-
+                        $this->chat->message($e)->send();
                     } 
                     break;
                 default:
@@ -554,7 +554,70 @@ class Handler  extends WebhookHandler
         ]);
         Telegraph::deleteMessage($this->messageId)->send();
     }
-   
+    
+      public function next()
+    {
+        $user = $this->user();
+      
+        $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
+        $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
+        $text = '🛍 Ваш  продукт сегодня' ;
+        $text .= "\n🗺 ". $order?->user_adresses?->title . PHP_EOL;
+        foreach($orderItem as $value){
+            $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
+        }
+        $inlineKeyboard = Keyboard::make()->row([
+            Button::make('⬅️ Назад')->action('karzina'),
+           
+            Button::make("✅ Подтверждение")->action('yes')->param('next', $order->id)
+        ]);
+        $text .= "\n💵 Общая сумма: ". number_format($order->total_sum) . ' сум' .PHP_EOL;
+        $this->chat->edit($this->messageId)
+            ->html($text)
+            ->keyboard($inlineKeyboard)->send();
+    }
+
+    public function yes()
+    {   
+        Telegraph::deleteMessage($this->messageId)->send();
+        $this->setpage('next');
+        $text = "
+        Пожалуйста, выберите тип оплаты
+        ";
+        $payment = PaymentT::get();
+        $key = [];
+        foreach($payment as $value){
+           $key[] =  ReplyButton::make($value['title']);
+        }
+        $key[] =      ReplyButton::make('⬅️ Главное меню');
+        $replyKeyboard = ReplyKeyboard::make()
+        ->buttons(
+            $key
+        )->resize(true);
+
+        $this->chat->message($text)->replyKeyboard($replyKeyboard)->send();
+    }
+
+    public function finish($payment_id = null)
+    {
+        $user = $this->user();
+        
+        $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
+        $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
+        $text = 'Номер заказа' . rand(123, 1232) ;
+        $text .= "\n Статус: Подтвержден";
+        $text .= "\n Адрес: Ташкент, улица Зульфияханум, 3A";
+        $text .= "\n🗺 ". $order?->user_adresses?->title . PHP_EOL;
+        foreach($orderItem as $value){
+            $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
+        }
+        $text .= "Тип оплаты: Rahmat";
+        $text .= "Товары:    15 000 сум";
+        $text .= "Итого:    15 000 сум";
+
+        
+    }
+
     private function lineKeyb($orderItem)
     {
         $line = [
@@ -693,49 +756,8 @@ class Handler  extends WebhookHandler
         )->send();
     }
 
-    public function next()
-    {
-        $user = $this->user();
-        Telegraph::deleteMessage($this->messageId)->send();
-        $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
-        $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
-        $text = '🛍 Ваш  продукт сегодня' ;
-        $text .= "\n🗺 ". $order?->user_adresses?->title . PHP_EOL;
-        foreach($orderItem as $value){
-            $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
-        }
-        $inlineKeyboard = Keyboard::make()->row([
-            Button::make('⬅️ Назад')->action('karzina'),
-           
-            Button::make("✅ Подтверждение")->action('yes')->param('next', $order->id)
-        ]);
-        $text .= "\n💵 Общая сумма: ". number_format($order->total_sum) . ' сум' .PHP_EOL;
-        $this->chat->edit($this->messageId)
-            ->html($text)
-            ->keyboard($inlineKeyboard)->send();
-    }
-
-    public function yes()
-    {   
-        $this->setpage('next');
-        $text = "
-        Пожалуйста, выберите тип оплаты
-        ";
-        $payment = PaymentT::get();
-        $key = [];
-        foreach($payment as $value){
-           $key[] =  ReplyButton::make($value['title']);
-        }
-        $key[] =      ReplyButton::make('⬅️ Главное меню');
-        $replyKeyboard = ReplyKeyboard::make()
-        ->buttons(
-            $key
-        )->resize(true);
-
-        $this->chat->message($text)->replyKeyboard($replyKeyboard)->send();
-    }
-
- 
+  
+    
     private function getOrder()
     {
         return Order::where('telegram_id', $this->chat->chat_id)->latest()->first() ?? null;
