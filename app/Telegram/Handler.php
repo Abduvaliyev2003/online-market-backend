@@ -21,7 +21,6 @@ use DefStudio\Telegraph\Keyboard\ReplyButton;
 use DefStudio\Telegraph\Keyboard\ReplyKeyboard;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Stringable;
-use Nette\Utils\Random;
 use DefStudio\Telegraph\Keyboard\Keyboard;
 
 class Handler  extends WebhookHandler
@@ -141,7 +140,7 @@ class Handler  extends WebhookHandler
     
     public function menu($bol = false, $edit = false):void
     {
-     
+        $this->setpage('menu');
         $inlineKeyboard = Keyboard::make()
         ->row([
             Button::make('🛒 Начать заказ')->action('new_location'),
