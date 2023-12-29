@@ -107,7 +107,6 @@ class Handler  extends WebhookHandler
                             $this->chat->message('Natog`ri formatda yozdingiz')->send();
                         }
                     }
-                    
                     break;
                 case 'location': 
                     if($longitude !== "")
@@ -120,11 +119,11 @@ class Handler  extends WebhookHandler
                 case 'next':
                     $e = PaymentT::where('title', $text)->first();
                     if("⬅️ Назад" == $text) {
-                        Telegraph::deleteMessage($this->messageId - 1 )->send();
+                        Telegraph::deleteMessage($this->messageId - 2 )->send();
                         $this->karzina();
                     } elseif($e !== null)
                     {
-                        $this->finish($e->id);
+                        $this->finish($e);
                     }
                     elseif($text == '🛒 Начать заказ')
                     {
@@ -613,28 +612,36 @@ class Handler  extends WebhookHandler
         $this->chat->message($text)->replyKeyboard($replyKeyboard)->send();
     }
 
-    public function finish($payment_id = null)
+    public function finish($payment)
     {
         $user = $this->user();
+        $orderI = Order::where('id' , $user->order_id)->update([
+           'status' => 'end',
+           'payment_id' => $payment['id']
+        ]);
         $replyKeyboard = ReplyKeyboard::make()
         ->row([
             ReplyButton::make('🛒 Начать заказ'),
         ])->resize(true);
         $this->chat->html('Оформим ваш заказ вместе?')->replyKeyboard($replyKeyboard)->send();
         $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
+        $address = UserAddress::find($order['address_id']);
         $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
         $text = 'Номер заказа:' . rand(123, 1232) ;
         $text .= "\nСтатус: Подтвержден";
-        $text .= "\nАдрес: Ташкент, улица Зульфияханум, 3A";
+        $text .= "\nАдрес: " . $address['title'];
         $text .= "\n🗺 ". $order?->user_adresses?->title . PHP_EOL;
         foreach($orderItem as $value){
             $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
         }
-        $text .= "\n\nТип оплаты: Rahmat";
-        $text .= "\nТовары: 15 000 сум";
-        $text .= "\nИтого:  15 000 сум";
+        $text .= "\n\nТип оплаты: " . $payment['title'];
+        $text .= "\nТовары: " . number_format($order['total_sum']) .  " сум";
+        $text .= "\nИтого:  " .  number_format($order['total_sum']) .  " сум";
 
         $this->chat->html($text)->replyKeyboard($replyKeyboard)->send();
+        $orderItem->update([
+            'status' => 'end'
+        ]);
     }
 
     private function lineKeyb($orderItem)
