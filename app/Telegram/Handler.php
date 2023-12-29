@@ -119,7 +119,9 @@ class Handler  extends WebhookHandler
                     break;
                 case 'next':
                     $e = PaymentT::where('title', $text)->first();
-                    if($e !== null)
+                    if("⬅️ Назад" == $text) {
+                        $this->karzina();
+                    } elseif($e !== null)
                     {
                         $this->finish($e->id);
                         $this->chat->message($e)->send();
@@ -590,6 +592,9 @@ class Handler  extends WebhookHandler
         foreach($payment as $value){
            $key[] =  ReplyButton::make($value['title']);
         }
+
+        $key[] = ReplyButton::make('⬅️ Назад');
+           
         $key[] =      ReplyButton::make('⬅️ Главное меню');
         $replyKeyboard = ReplyKeyboard::make()
         ->buttons(
@@ -606,13 +611,13 @@ class Handler  extends WebhookHandler
         $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
         $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
         $text = 'Номер заказа:' . rand(123, 1232) ;
-        $text .= "\n Статус: Подтвержден";
-        $text .= "\n Адрес: Ташкент, улица Зульфияханум, 3A";
+        $text .= "\nСтатус: Подтвержден";
+        $text .= "\nАдрес: Ташкент, улица Зульфияханум, 3A";
         $text .= "\n🗺 ". $order?->user_adresses?->title . PHP_EOL;
         foreach($orderItem as $value){
             $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
         }
-        $text .= "\nТип оплаты: Rahmat";
+        $text .= "\n\nТип оплаты: Rahmat";
         $text .= "\nТовары: 15 000 сум";
         $text .= "\nИтого:  15 000 сум";
 
