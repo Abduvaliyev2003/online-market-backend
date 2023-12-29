@@ -69,6 +69,7 @@ class Handler  extends WebhookHandler
         $latitude = $this->message?->location()?->latitude() ?? "";
         $longitude = $this->message?->location()?->longitude() ?? "";
         if($text->value() === '⬅️ Главное меню') {
+            Telegraph::deleteMessage($this->messageId - 1)->send();
             $this->menu();
         } else {
             switch($this->getPage())
@@ -304,7 +305,7 @@ class Handler  extends WebhookHandler
                 ->where('user_id' , $user->id)
                 ->where('status', 'end')
                 ->get();
-        if (is_null($orders)) {
+        if ($orders == []) {
             $this->chat->message("Мои заказы:")->send(); 
         } else {
             foreach ($orders as  $key => $value) {
@@ -653,6 +654,7 @@ class Handler  extends WebhookHandler
         ]);
         $replyKeyboard = ReplyKeyboard::make()
         ->row([
+            ReplyButton::make('⬅️ Главное меню'),
             ReplyButton::make('🛒 Начать заказ'),
         ])->resize(true);
         $this->chat->html('Оформим ваш заказ вместе?')->replyKeyboard($replyKeyboard)->send();
@@ -671,7 +673,7 @@ class Handler  extends WebhookHandler
         $text .= "\nИтого:  " .  number_format($order['total_sum']) .  " сум";
 
         $this->chat->html($text)->replyKeyboard($replyKeyboard)->send();
-        $orderItem->update([
+        OrderItem::where('order_id' , $order->id)->update([
             'status' => 'end'
         ]);
     }
