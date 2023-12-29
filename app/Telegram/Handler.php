@@ -121,6 +121,7 @@ class Handler  extends WebhookHandler
                     $e = PaymentT::where('title', $text)->first();
                     if($e !== null)
                     {
+                        $this->finish($e->id);
                         $this->chat->message($e)->send();
                     } 
                     break;
@@ -604,18 +605,18 @@ class Handler  extends WebhookHandler
         
         $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
         $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
-        $text = 'Номер заказа' . rand(123, 1232) ;
+        $text = 'Номер заказа:' . rand(123, 1232) ;
         $text .= "\n Статус: Подтвержден";
         $text .= "\n Адрес: Ташкент, улица Зульфияханум, 3A";
         $text .= "\n🗺 ". $order?->user_adresses?->title . PHP_EOL;
         foreach($orderItem as $value){
             $text .= "\n✔️ " . $value['products']['title'] . " " . $value['count'];
         }
-        $text .= "Тип оплаты: Rahmat";
-        $text .= "Товары:    15 000 сум";
-        $text .= "Итого:    15 000 сум";
+        $text .= "\nТип оплаты: Rahmat";
+        $text .= "\nТовары: 15 000 сум";
+        $text .= "\nИтого:  15 000 сум";
 
-        
+        $this->chat->html($text)->send();
     }
 
     private function lineKeyb($orderItem)
