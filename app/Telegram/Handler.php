@@ -120,12 +120,16 @@ class Handler  extends WebhookHandler
                 case 'next':
                     $e = PaymentT::where('title', $text)->first();
                     if("⬅️ Назад" == $text) {
+                        Telegraph::deleteMessage($this->messageId - 1 )->send();
                         $this->karzina();
                     } elseif($e !== null)
                     {
                         $this->finish($e->id);
-                        $this->chat->message($e)->send();
-                    } 
+                    }
+                    elseif($text == '🛒 Начать заказ')
+                    {
+                        $this->new_location();
+                    }
                     break;
                 default:
                     $this->menu();
@@ -522,8 +526,13 @@ class Handler  extends WebhookHandler
             } else  
             {
                 Telegraph::deleteMessage($this->messageId)->send();
+                $replyKeyboard = ReplyKeyboard::make()
+                ->row([
+                    ReplyButton::make('⬅️ Главное меню'),
+                ])->resize(true);
+                $this->chat->html('Оформим ваш заказ вместе?')->replyKeyboard($replyKeyboard)->send();
                 $this->chat->html($text)->keyboard($inlineKeyboard)->send();
-                
+             
             }   
         } else 
         {    
@@ -607,7 +616,11 @@ class Handler  extends WebhookHandler
     public function finish($payment_id = null)
     {
         $user = $this->user();
-        
+        $replyKeyboard = ReplyKeyboard::make()
+        ->row([
+            ReplyButton::make('🛒 Начать заказ'),
+        ])->resize(true);
+        $this->chat->html('Оформим ваш заказ вместе?')->replyKeyboard($replyKeyboard)->send();
         $order = Order::where('id',$user->order_id)->with('userAdresses')->first();
         $orderItem = OrderItem::where('order_id', $order->id)->with('products')->get();
         $text = 'Номер заказа:' . rand(123, 1232) ;
@@ -621,7 +634,7 @@ class Handler  extends WebhookHandler
         $text .= "\nТовары: 15 000 сум";
         $text .= "\nИтого:  15 000 сум";
 
-        $this->chat->html($text)->send();
+        $this->chat->html($text)->replyKeyboard($replyKeyboard)->send();
     }
 
     private function lineKeyb($orderItem)
