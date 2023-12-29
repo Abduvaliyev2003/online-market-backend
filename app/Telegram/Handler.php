@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\TelegramAccounts;
 use App\Models\User;
 use App\Models\UserAddress;
+use Carbon\Carbon;
 use DefStudio\Telegraph\Enums\ChatActions;
 use Illuminate\Support\Str;
 use DefStudio\Telegraph\Facades\Telegraph;
@@ -293,6 +294,37 @@ class Handler  extends WebhookHandler
     public function product_back()
     {
         $this->order();
+    }
+
+    public function my_order()
+    {
+        $user = $this->user();
+        Telegraph::deleteMessage($this->messageId)->send();
+        $orders = Order::with(['orderItems'])
+                ->where('user_id' , $user->id)
+                ->where('status', 'end')
+                ->get();
+        if (is_null($orders)) {
+            $this->chat->message("Мои заказы:")->send(); 
+        } else {
+            foreach ($orders as  $key => $value) {
+                $orderItems = OrderItem::with('products')->where('order_id', $value['id'])->get();
+                $text = "Мои заказы: " .  Carbon::parse($value['created_at'])->format('d/m/Y');
+                $text .= "\n \n🗺 " . UserAddress::where('id', $value['address_id'])->first()['title'];
+                foreach ( $orderItems as $val) {
+                    $text .= "\n✔️ " . $val['products']['title'] . " " . $val['count'];
+                }
+                $text .= "\n\nТип оплаты: " . PaymentT::where('id', $value['payment_id'])->first()['title'];
+                $text .= "\nТовары: " . number_format($value['total_sum']) .  " сум";
+                $inlineKeyboard = Keyboard::make()->row([
+                    Button::make('❌ Удалить все')->action('userOrderDelete')->param('order', $value->id),
+                ]);
+                $this->chat->html($text)->keyboard($inlineKeyboard)->send();
+            }        
+        }         
+        
+
+        
     }
 
     public function menus():void
@@ -708,7 +740,14 @@ class Handler  extends WebhookHandler
         ]);
         $this->order();
     }
-
+    
+    public function userOrderDelete()
+    {  
+        Telegraph::deleteMessage($this->messageId)->send();
+        $order_item_id = $this->data->get('order');
+        $order = Order::find($order_item_id);
+        $orderItem = OrderItem::where('order_id' , $order_item_id)->delete();
+    }
     public function delete_once()
     {    
         $order_item_id = $this->data->get('order_item-id');
