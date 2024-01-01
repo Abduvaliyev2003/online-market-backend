@@ -822,8 +822,6 @@ class Handler  extends WebhookHandler
         )->send();
     }
 
-  
-    
     private function getOrder()
     {
         return Order::where('telegram_id', $this->chat->chat_id)->latest()->first() ?? null;
