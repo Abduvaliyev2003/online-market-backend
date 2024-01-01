@@ -304,7 +304,8 @@ class Handler  extends WebhookHandler
                 ->where('user_id' , $user->id)
                 ->where('status', 'end')
                 ->get();
-        if ($orders == []) {
+       
+        if ($orders->isEmpty() ) {
             $this->chat->message("Мои заказы:")->send(); 
         } else {
             foreach ($orders as  $key => $value) {
@@ -317,7 +318,7 @@ class Handler  extends WebhookHandler
                 $text .= "\n\nТип оплаты: " . PaymentT::where('id', $value['payment_id'])->first()['title'];
                 $text .= "\nТовары: " . number_format($value['total_sum']) .  " сум";
                 $inlineKeyboard = Keyboard::make()->row([
-                    Button::make('❌ Удалить все')->action('userOrderDelete')->param('order', $value->id),
+                    Button::make('❌ Удалить')->action('userOrderDelete')->param('order', $value->id),
                 ]);
                 $this->chat->html($text)->keyboard($inlineKeyboard)->send();
             }        
@@ -748,6 +749,7 @@ class Handler  extends WebhookHandler
         $order_item_id = $this->data->get('order');
         $order = Order::find($order_item_id);
         $orderItem = OrderItem::where('order_id' , $order_item_id)->delete();
+        $order->delete();
     }
     public function delete_once()
     {    
