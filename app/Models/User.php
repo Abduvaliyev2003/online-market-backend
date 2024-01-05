@@ -70,5 +70,9 @@ class User extends Authenticatable
         return $this->hasMany(UserAddress::class);
     }
 
+    public function commentModels(): HasMany
+    {
+        return $this->hasMany(CommentModel::class);
+    }
 
 }
