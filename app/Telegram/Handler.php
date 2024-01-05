@@ -3,6 +3,7 @@
 namespace App\Telegram;
 
 use App\Models\Category;
+use App\Models\CommentModel;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PaymentT;
@@ -95,6 +96,7 @@ class Handler  extends WebhookHandler
                     if($text->value() !== '')
                     {   
                         $this->chat->message("😊 Спасибо за комментарий")->send();
+                        $this->commentStore($text);
                         $this->menu();
                     }
                     break;
@@ -294,6 +296,14 @@ class Handler  extends WebhookHandler
     public function product_back()
     {
         $this->order();
+    }
+
+    public function  commentStore($comment):void
+    {
+        $user = $this->user();
+        $user->commentModels()->create([
+           'comment' => $comment
+        ]);
     }
 
     public function my_order()
