@@ -75,8 +75,12 @@ class Handler  extends WebhookHandler
             switch($this->getPage())
             {   
                 case 'register':
-                
-                    if($text->value() !== null){
+                    if( $contact  !== null || $contact  !== [])
+                    {  
+                        $this->user_store($contact,  $this->chat->chat_id);
+                        $this->menu();
+                    }
+                    elseif($text->value() !== null){
                         $reg = $this->regexPhoneNumber($text);
                         if ($reg) {
                             $phone = $text->value();
@@ -85,12 +89,7 @@ class Handler  extends WebhookHandler
                         } else {
                             $this->chat->message('Natog`ri formatda yozdingiz')->send();
                         }
-                      
-                    } elseif( $contact  !== null || $contact  !== [])
-                    {  
-                        $this->user_store($contact,  $this->chat->chat_id);
-                        $this->menu();
-                    }
+                    } 
                     break;
                 case 'comment': 
                     if($text->value() !== '')
@@ -300,10 +299,10 @@ class Handler  extends WebhookHandler
 
     public function  commentStore($comment):void
     {
-        // $user = $this->user();
-        // $user->commentModels()->create([
-        //    'comment' => $comment
-        // ]);
+        $user = $this->user();
+        $user->commentModels()->create([
+           'comment' => $comment
+        ]);
     }
 
     public function my_order()
