@@ -300,10 +300,10 @@ class Handler  extends WebhookHandler
 
     public function  commentStore($comment):void
     {
-        $user = $this->user();
-        $user->commentModels()->create([
-           'comment' => $comment
-        ]);
+        // $user = $this->user();
+        // $user->commentModels()->create([
+        //    'comment' => $comment
+        // ]);
     }
 
     public function my_order()
