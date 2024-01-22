@@ -187,7 +187,7 @@
 					  <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
 						<div style="font-family:Helvetica, Arial, sans-serif;font-size:18px;font-weight:bold;line-height:24px;text-align:left;color:#434245;">
 						  <p class="date" style="margin: 0;">{{ now()->format('F j, Y') }}</p>
-						  <h2 style="margin: 0; font-size: 24px; line-height: normal; font-weight: bold;">Peaceful, a, social enterprise; inspiring support, shared value fairness. </h2>
+						  <a href="https://jobo.uz" style="margin: 0; font-size: 22px; line-height: normal; font-weight: bold;">Peaceful, a, social enterprise; inspiring support, shared value fairness. </a>
 						</div>
 					  </td>
 					</tr>
@@ -267,11 +267,7 @@
 				<div class="mj-column-per-100 mj-outlook-group-fix" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
 				  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
 					<tbody><tr>
-					  <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-						<div style="font-family:Helvetica, Arial, sans-serif;font-size:18px;font-weight:400;line-height:24px;text-align:left;color:#434245;">
-						  <p style="margin: 0;">We hope you find these resources helpful, and we’ll be in touch again next week with more updates. </p>
-						</div>
-					  </td>
+					 
 					</tr>
 					<tr>
 					  <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
@@ -411,7 +407,7 @@
 					</tr>
 					<tr>
 					  <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-						<div style="font-family:Helvetica, Arial, sans-serif;font-size:14px;font-weight:400;line-height:24px;text-align:left;color:#ACA9BB;">Have questions or need help? Email us at <a href="#" style="color: #2e58ff; text-decoration: none;"> info@codedmails.com </a></div>
+						<div style="font-family:Helvetica, Arial, sans-serif;font-size:14px;font-weight:400;line-height:24px;text-align:left;color:#ACA9BB;">Have questions or need help? Email us at <a href="#" style="color: #2e58ff; text-decoration: none;"> abduvaliyev23@gmail.com </a></div>
 					  </td>
 					</tr>
 					<tr>
